@@ -11,12 +11,14 @@
  * @get from https://www.dfrobot.com
  * @url https://github.com/DFRobot/DFRobot_GDL/src/DFRpbot_UI
 */
+#include "wire.h"
 #include "DFRobot_UI.h"
 #include "Arduino.h"
 #include "DFRobot_GDL.h"
 #include "DFRobot_Touch.h"
-#include "GrayscaleBitmap1.h"
+
 #include <SD.h>
+
 
 #define TFT_MISO 13 // (leave TFT SDO disconnected if other SPI devices share MISO)
 #define TFT_MOSI 11
@@ -24,16 +26,15 @@
 #define TFT_CS    10  // Chip select control pin
 #define TFT_DC    15  // Data Command control pin
 #define TFT_RST   6  // Reset pin (could connect to RST pin)
-#define TFT_SCL   1
-#define TFT_SDA   2
-#define TFT_INT   5
-
+#define TFT_BL    7
+#define TFT_SCL   18
+#define TFT_SDA   17
+#define TFT_INT   16
 
 /**
    @brief Constructor  When the touch uses the gt series chip, you can call this constructor
 */
 DFRobot_Touch_GT911 touch;
-
 
 /**
    @brief Constructor When the screen uses hardware SPI communication, the driver IC is st7789, and the screen resolution is 240x320, this constructor can be called
@@ -51,501 +52,152 @@ DFRobot_ILI9488_320x480_HW_SPI screen(/*dc=*/TFT_DC,/*cs=*/TFT_CS,/*rst=*/TFT_RS
    @param gdl Screen object
    @param touch Touch object
 */
+
 DFRobot_UI ui(&screen, &touch);
 
+/*
+  FUNCTION PROTOTYPE DECLARATIONS
+*/
+void newMedication();
+void containerSelection();
+void homeScreen();
+void btnCallback(DFRobot_UI::sButton_t &btn,DFRobot_UI::sTextBox_t &obj);
 
-
-uint8_t fontSize = 2; //Font size
-uint16_t fontColor = 0xf800; //Font color
-uint8_t fontLen = 4 * fontSize * 8; //String width
-char * font = "DFRC"; // String
-uint8_t fontHeight = fontSize * 8;//String height
-uint16_t posx =  screen.width() / 2 ; //The x-coordinate of the starting position of the string
-uint16_t posy =  screen.height()  / 2;//the y-coordinate of the beginning of the string
-int sth = 0;
-
-void setup()
-{
-
-  Serial.begin(115200);
-  //UI initialization
-  ui.begin();
-  //Draw the initial string
-  ui.drawString(posx - fontLen / 2-8, posy - fontHeight / 2, font, fontColor , ui.bgColor, fontSize, sth);
-
-
+/*
+  FUNCTION DECLARATIONS
+*/
+void newMedication() {
+  containerSelection();
 }
 
-void refresh() {
-  DFRobot_UI:: eGesture_t gesture = ui.getGestures();
-  if(gesture != ui.NONE){
-    Serial.println(gesture);
-    }                
-  
-  switch (gesture) {
-    //Gesture detected as zoom out 
-    case ui.SHRINK : {
-        screen.fillRect(posx - fontLen / 2 -8,  posy - fontHeight / 2, 4 * fontSize * 8, fontSize * 8, ui.bgColor);
-        //fontSize decrease
-             fontSize--;
-        if (fontSize <= 1) fontSize = 1;
+// New Medication information input screen 
+void containerSelection(){
+/*
+    First button, btn1, for container 1
+*/ 
+  DFRobot_UI::sTextBox_t & tb = ui.creatText();
+  tb.bgColor = 0xe6B6;
+  ui.draw(&tb);
+  tb.setText("Which container are you using?");
 
-        fontHeight = fontSize * 8;
-        fontLen = 4 * fontSize * 8;
-        ui.drawString(posx - fontLen / 2-8 ,  posy - fontHeight / 2,  font, fontColor , ui.bgColor, fontSize, 0);
-      }; break;
-    //Gesture detected as zoom in 
-    case ui.MAGNIFY : {
-        screen.fillRect(posx - fontLen / 2-8 ,  posy - fontHeight / 2, 4 * fontSize * 8, fontSize * 8, ui.bgColor);
-        //fontSize increase
-            fontSize++;
-        if (fontSize >= 7) fontSize = 7;
-        fontHeight = fontSize * 8;
-        fontLen = 4 * fontSize * 8;
-        ui.drawString(posx - fontLen / 2-8 , posy - fontHeight / 2, font, fontColor , ui.bgColor, fontSize, 0);
-      } break;
-    //Gesture detected as swiping up with two fingers
-    case ui.DUPGLIDE : {
-        screen.fillRect(posx - fontLen / 2-8 ,   posy - fontHeight / 2, 4 * fontSize * 8, fontSize * 8, ui.bgColor);
-        posy -= 10 ;
-        fontHeight = fontSize * 8;
-        fontLen = 4 * fontSize * 8;
-        ui.drawString(posx - fontLen / 2 - 8,  posy - fontHeight / 2, font, fontColor , ui.bgColor, fontSize, 0);
-      } break;
-    //Gesture detected as swiping down with two fingers
-    case ui.DDOWNGLIDE : {
-        screen.fillRect(posx - fontLen / 2 - 8,  posy - fontHeight / 2, 4 * fontSize * 8, fontSize * 8, ui.bgColor);
-        posy += 10;
-        fontHeight = fontSize * 8;
-        fontLen = 4 * fontSize * 8;
-        ui.drawString(posx - fontLen / 2 - 8,  posy - fontHeight / 2, font, fontColor , ui.bgColor, fontSize, 0);
-      } break;
-    case ui.NONE: {
-        return;
-      }
-  }
-}
+/*
+    First button, btn1, for container 1
+*/
+  DFRobot_UI::sButton_t & btn1 = ui.creatButton();
+  //Set the name of the button
+  btn1.setText("CONTAINER 1");
+  btn1.bgColor = COLOR_RGB565_RED;
+  btn1.setCallback(btnCallback);
+  //Each button has a text box, its parameter needs to be set by yourself.
+  btn1.setOutput(&tb);
+  ui.draw(&btn1,/**x=*/screen.width(),/**y=*/screen.height()/10,/*width*/screen.width()/3*2,/*height*/screen.width()/10*2);
 
-void loop()
-{
-  refresh();
-  //Serial.println(touch.scan());
-}
-
-
-/**
- * @brief Constructor Constructor of hardware SPI communication
- * @param dc Command/data line pin for SPI communication
- * @param cs Chip select pin for SPI communication
- * @param rst reset pin of the screen
- */
-//DFRobot_ST7789_240x240_HW_SPI screen(/*dc=*/TFT_DC,/*cs=*/TFT_CS,/*rst=*/TFT_RST);
-//DFRobot_ST7789_240x320_HW_SPI screen(/*dc=*/TFT_DC,/*cs=*/TFT_CS,/*rst=*/TFT_RST);
-//DFRobot_ILI9341_240x320_HW_SPI  screen(/*dc=*/TFT_DC,/*cs=*/TFT_CS,/*rst=*/TFT_RST);
-//DFRobot_ILI9488_320x480_HW_SPI screen(/*dc=*/TFT_DC,/*cs=*/TFT_CS,/*rst=*/TFT_RST);
-/* M0 mainboard DMA transfer */
-//DFRobot_ST7789_240x240_DMA_SPI screen(/*dc=*/TFT_DC,/*cs=*/TFT_CS,/*rst=*/TFT_RST);
-//DFRobot_ST7789_240x320_DMA_SPI screen(/*dc=*/TFT_DC,/*cs=*/TFT_CS,/*rst=*/TFT_RST);
-//DFRobot_ILI9341_240x320_DMA_SPI screen(/*dc=*/TFT_DC,/*cs=*/TFT_CS,/*rst=*/TFT_RST);
-//DFRobot_ILI9488_320x480_DMA_SPI screen(/*dc=*/TFT_DC,/*cs=*/TFT_CS,/*rst=*/TFT_RST);
+ /*
+    Second button, btn2, for container 2
+ */ 
+  DFRobot_UI::sButton_t & btn2 = ui.creatButton();
+  btn2.setText("CONTAINER 2");
+  btn2.bgColor = COLOR_RGB565_GREEN;
+  btn2.setCallback(btnCallback);
+  //Each button has a text box, its parameter needs to be set by yourself.
+  btn2.setOutput(&tb);
+  ui.draw(&btn2,/**x=*/screen.width(),/**y=*/screen.height()/10*2,/*width*/screen.width()/3*2,/*height*/screen.width()/10*2);
 
 
 /*
- *User-selectable macro definition color
- *COLOR_RGB565_BLACK   COLOR_RGB565_NAVY    COLOR_RGB565_DGREEN   COLOR_RGB565_DCYAN 
- *COLOR_RGB565_MAROON  COLOR_RGB565_PURPLE  COLOR_RGB565_OLIVE    COLOR_RGB565_LGRAY     
- *COLOR_RGB565_DGRAY   COLOR_RGB565_BLUE    COLOR_RGB565_GREEN    COLOR_RGB565_CYAN  
- *COLOR_RGB565_RED     COLOR_RGB565_MAGENTA COLOR_RGB565_YELLOW   COLOR_RGB565_ORANGE           
- *COLOR_RGB565_WHITE   
- */
+    Third button, btn3, for container 3
+ */ 
+  DFRobot_UI::sButton_t & btn3 = ui.creatButton();
+  btn3.setText("CONTAINER 3");
+  btn3.bgColor = COLOR_RGB565_BLUE;
+  btn3.setCallback(btnCallback);
+  //Each button has a text box, its parameter needs to be set by yourself.
+  btn3.setOutput(&tb);
+  ui.draw(&btn3,/**x=*/screen.width(),/**y=*/screen.height()/10*3,/*width*/screen.width()/3*2,/*height*/screen.width()/10*2);
 
-
-// void setup() {
-//   Serial.begin(115200);
-//   screen.begin();
-// }
-
-
-// /* Test to draw a pixel*/
-// void testDrawPixel() {
-//   //Clear screen
-//   screen.fillScreen(COLOR_RGB565_BLACK);
-//   int x = 0;
-//   int y = screen.height();
-//   for(int i = 0; i <= screen.width()/2; i += 10){
-//     for (x = screen.width() - i; x >= i; x-=10 ){
-//       /*
-//        * @ brief draw a pixel
-//        * @ param x coordinate
-//        *         y coordinate
-//        * c pixel color
-//        */
-//       screen.drawPixel(x, y, COLOR_RGB565_ORANGE);
-//       delay(10);
-//     }
-
-//     for (y = screen.height() - i; y >= i; y-=10){
-//       screen.drawPixel(x, y, COLOR_RGB565_ORANGE);
-//       delay(10);
-//     }
-
-//     for (x = i; x <= screen.width() - i + 1; x+=10 ){
-//       screen.drawPixel(x, y, COLOR_RGB565_ORANGE);
-//       delay(10);
-//     }
-
-//     for (y = i; y <= screen.height() - i + 1; y+=10){
-//       screen.drawPixel(x, y, COLOR_RGB565_ORANGE);
-//       delay(10);
-//     }
-//   }
-// }
-
-// /* Test to draw a line*/
-// void testLine(){
-// // 0x00FF is the color data in the format of RGB565
-//   uint16_t color = 0x00FF;
-//   screen.fillScreen(COLOR_RGB565_BLACK);
-//   for (int16_t x=0; x < screen.width(); x+=6) {
-//     /*
-//      * @ brief draw a line
-//      * @ param x0 The x-coordinate of the first vertex
-//      *         y0 The y-coordinate of the first vertex
-//      *         x1 The x-coordinate of the second vertex
-//      *         y1 The y-coordinate of the second vertex
-//      *         c line color
-//      */
-//     screen.drawLine(/*x0=*/screen.width()/*Screen width*//2, /*y0=*/screen.height()/*Screen height*//2, /*x1=*/x, /*y1=*/0, /*c=*/color+=0x0700);
-//   }
-//   for (int16_t y=0; y < screen.height(); y+=6) {
-//     screen.drawLine(screen.width()/2, screen.height()/2, screen.width(), y, color+=0x0700);
-//   }
-
-//   for (int16_t x = screen.width(); x >= 0; x-=6) {
-//     screen.drawLine(screen.width()/2, screen.height()/2, x,screen.height(), color+=0x0700);
-//   }
-
-//   for (int16_t y = screen.height(); y >= 0; y-=6) {
-//     screen.drawLine(screen.width()/2, screen.height()/2, 0, y, color+=0x0700);
-//   }
-// }
-
-// /* Test to fast draw line(need to set delay), only horizontal line and vertical line */
-// void testFastLines(uint16_t color1, uint16_t color2) {
-//   for (int16_t y=0; y < screen.height(); y+=4) {
-//     /*
-//      * @ brief draw a line
-//      * @ param x The x-coordinate of the first vertex
-//      *         y The y-coordinate of the first vertex
-//      *         w Length of line segment
-//      *         c line color
-//      */
-//     screen.drawFastHLine(/*x=*/0, /*y=*/y, /*w=*/screen.width(),/*c=*/color2);
-//     delay(10);
-//   }
-
-//   for(int16_t x=0; x < screen.width(); x+=3) {
-//     /*
-//      * @ brief draw a line
-//      * @ param x The x-coordinate of the first vertex
-//      *         y The y-coordinate of the first vertex
-//      *         h length of line segment
-//      *         c line color
-//      */
-//     screen.drawFastVLine(/*x=*/x, /*y=*/0, /*h=*/screen.height(), /*c=*/color1);
-//     delay(10);
-//   }
-// }
-
-// /* Test to draw a rectangle*/
-// void testRects(uint16_t color1, uint16_t color2) { 
-//     screen.fillScreen(COLOR_RGB565_BLACK);
-//     int16_t x=screen.width()-12;
-//     for (; x > 100; x-=screen.width()/40) {
-//       /*
-//        * @ brief draw a hollow rectangle
-//        * @ param x The x-coordinate of the vertex 
-//        * @ param y The y-coordinate of the vertex
-//        * @ param w horizontal side length
-//        * @ param h longitudinal side length
-//        * @ param color Fill color, RGB color with 565 structure
-//        */
-//       screen.drawRect(/*x=*/screen.width()/2 -x/2, /*y=*/screen.height()/2 -x/2 , /*w=*/x, /*h=*/x, /*color=*/color2+=0x0F00);
-//       delay(100);
-//     }
-
-//     /*
-//      * @ brief draw a filled rectangle
-//      * @ param x The x-coordinate of the vertex
-//      * @ param y The y-coordinate of the vertex
-//      * @ param w horizontal side length
-//      * @ param h longitudinal side length
-//      * @ param color Fill color, RGB color with 565 structure
-//      */
-//     screen.fillRect(/*x=*/screen.width()/2 -x/2, /*y=*/screen.height()/2 -x/2 , /*w=*/x, /*h=*/x, /*color=*/color2);
-//     delay(100);
-//     for(; x > 6; x-=screen.width()/40){
-//       screen.drawRect(screen.width()/2 -x/2, screen.height()/2 -x/2 , x, x, color1);
-//       delay(100);
-//     }
-// }
-
-// /* Test to draw a rounded rectangle */
-// void testRoundRects() {
-//   screen.fillScreen(COLOR_RGB565_BLACK);
-// // 0xF00F is the color data in the format of RGB565
-//   int color = 0xF00F;
-//   int i;
-//   int x = 0;
-//   int y = 0;
-//   int w = screen.width()-3;
-//   int h = screen.height()-3;
-//   for(i = 0 ; i <= 16; i+=2) {
-//     /*
-//      * @ brief Draw a hollow rounded rectangle
-//      * @ param x0 The x-coordinate of the start vertex 
-//      * @ param y0 The y-coordinate of the start vertex 
-//      * @ param w horizontal side length
-//      * @ param h longitudinal side length
-//      * @ param radius Round corner radius
-//      * @ param color border color, 565 structure RGB color
-//      */
-//     screen.drawRoundRect(/*x0=*/x, /*y0=*/y, /*w=*/w, /*h=*/h, /*radius=*/20, /*color=*/color);
-//     x+=5;
-//     y+=5;
-//     w-=10;
-//     h-=10;
-//     color+=0x0100;
-//     delay(50);
-//   }
-//   for(i = 0 ; i <= 16; i+=2) {
-//     /*
-//      * @ brief Draw a filled and rounded rectangle
-//      * @ param x0 The x-coordinate of the start vertex
-//      * @ param y0 The y-coordinate of the start vertex
-//      * @ param w horizontal side length
-//      * @ param h longitudinal side length
-//      * @ param radius Round corner radius
-//      * @ param color Fill color, RGB color with 565 structure
-//      */
-//     screen.fillRoundRect(/*x0=*/x, /*y0=*/y, /*w=*/w, /*h=*/h, /*radius=*/10, /*color=*/color);
-//     x+=5;
-//     y+=5;
-//     w-=10;
-//     h-=10;
-//     color+=0x0500;
-//     delay(50);
-//   }
-// }
-
-// /* Test to draw a circle */
-// void testCircles(uint8_t radius, uint16_t color) {
-//   screen.fillScreen(COLOR_RGB565_BLACK);
-//   for (int16_t x=radius; x <=screen.width()-radius; x+=radius*2) {
-//     for (int16_t y=radius; y <=screen.height()-radius; y+=radius*2) {
-//       /*
-//        * @ brief Draw a hollow circle
-//        * @ param x0 The x-coordinate of the center point
-//        * @ param y0 The y-coordinate of the center point
-//        * @ param r radius
-//        * @ param color Circle color, RGB color with 565 structure
-//        */
-//       screen.drawCircle(/*x0=*/x, /*y0=*/y, /*r=*/radius, /*color=*/color);
-//         if(x == y ||x == -y ||x == y + 2*radius)
-//           /*
-//            * @ brief Draw a filled circle
-//            * @ param x0 The x-coordinate of the center point
-//            * @ param y0 The y-coordinate of the center point
-//            * @ param r radius
-//            * @ param color Fill color, RGB color with 565 structure
-//            */
-//           screen.fillCircle(/*x0=*/x, /*y0=*/y, /*r=*/radius, /*color=*/color);
-//        color += 800;
-//        delay(100);
-//     }
-//   }
-// }
-
-// /* Test to draw a triangle */
-// void testTriangles(uint16_t color){
-//   screen.fillScreen(COLOR_RGB565_BLACK);
-
-//   for (int16_t i=0; i <=screen.width(); i+=24)
-//     /*
-//      * @ brief Draw a hollow triangle
-//      * @ param x0 The x-coordinate of the start vertex
-//      * @ param y0 The y-coordinate of the start vertex
-//      * @ param x1 The x-coordinate of the second vertex
-//      * @ param y1 The y-coordinate of the second vertex
-//      * @ param x2 The x-coordinate of the third vertex
-//      * @ param y2 The y-coordinate of the third vertex
-//      * @ param color border color, 565 structure RGB color
-//      */
-//     screen.drawTriangle(/*x0=*/i,/*y0=*/0,/*x1=*/0,/*y1=*/screen.height()-i,/*x2=*/screen.width()-i,/*y2=*/screen.height(), /*color=*/color);
-
-//   for (int16_t i=0; i <screen.width(); i+=24)
-//     screen.drawTriangle(screen.width(),i*4/3,0,screen.height()-i*4/3,i,0, color);
-
-//   for (int16_t i=0; i <screen.width(); i+=24)
-//     screen.drawTriangle(screen.width(),i*4/3,i,0,screen.width()-i,screen.height(), color);
-
-//   color = COLOR_RGB565_RED;
-//   for (int16_t i=0; i <=screen.width(); i+=24)
-//      /*
-//       * @ brief Draw a filled triangle
-//       * @ param x0 The x-coordinate of the start vertex
-//       * @ param y0 The y-coordinate of the start vertex
-//       * @ param x1 The x-coordinate of the second vertex
-//       * @ param y1 The y-coordinate of the second vertex
-//       * @ param x2 The x-coordinate of the third vertex
-//       * @ param y2 The y-coordinate of the third vertex
-//       * @ param color Fill color, RGB color with 565 structure
-//       */
-//     screen.fillTriangle(/*x0=*/i,/*y0=*/0,/*x1=*/0,/*y1=*/screen.height()-i,/*x2=*/screen.width()-i,/*y2=*/screen.height(), /*color=*/color+=100);
-
-//   for (int16_t i=0; i <screen.width(); i+=24)
-//     screen.fillTriangle(screen.width(),i*4/3,0,screen.height()-i*4/3,i,0, color+=100);
-
-//   for (int16_t i=0; i <screen.width(); i+=24)
-//     screen.fillTriangle(screen.width(),i*4/3,i,0,screen.width()-i,screen.height(), color+=100);
-// }
-
-// void testPrint() {
-//   // 0x00FF is the color data in the format of RGB565
-//   int16_t color = 0x00FF;
-//    // Set text wrapping mode
-//    // true = Text word wrap, false = No word wrap
-//   screen.setTextWrap(false);
-//   //Fill color, RGB color with 565 structure
-//   screen.fillScreen(COLOR_RGB565_BLACK);
-
-//   //Set the coordinate position x = 0, y = 50
-//   screen.setCursor(0, 50);
-//   //Set the text color; this is a changeable value
-//   screen.setTextColor(color+=0x3000);
-//   //Set text size to 0
-//   screen.setTextSize(0);
-//   //Output text
-//   screen.println("Hello World!");
-
-//   screen.setTextColor(color+=0x3000);
-//   //Set text size to 1
-//   screen.setTextSize(1);
-//   screen.println("Hello World!");
-
-//   screen.setTextColor(color+=0x3000);
-//   //Set text size to 2
-//   screen.setTextSize(2);
-//   screen.println("Hello World!");
-
-//   screen.setTextColor(color+=0x3000);
-//   //Set text size to 3
-//   screen.setTextSize(3);
-//   screen.println("Hello World!");
-
-//   screen.setTextColor(color+=0x3000);
-//   //Set text size to 4
-//   screen.setTextSize(4);
-//   screen.println("Hello!"); 
-//   //Set text size to 5
-//   screen.setTextSize(5);
-//   screen.print("Hello!");
-//   delay(2000);
-
-//   //Set coordinate position x = 0, y = 0
-//   screen.setCursor(0, 0);
-//   //Fill color, RGB color with 565 structure
-//   screen.fillScreen(COLOR_RGB565_BLACK);
-//   screen.setTextSize(2);
-//   screen.setTextColor(color+=0x3000);
-//   screen.print("a = ");
-
-//   screen.setTextColor(color+=0x3000);
-//   int a = 1234;
-//   screen.println(a, 1);
-//   screen.setTextColor(color+=0x3000);
-//   screen.print(8675309, HEX);
-//   screen.println("this is HEX!");
-//   screen.println("");
-
-//   screen.setTextColor(color+=0x0F00);
-//   screen.println("running for: ");
-//   screen.setTextColor(color+=0x0F00);
-//   //Output time in millisecond
-//   screen.print(millis());
-//   screen.setTextColor(color+=0x0F00);
-//   screen.println("/1000 seconds.");
-
-//   char *text = "Hi DFRobot!";
-//   screen.setTextColor(color+=0x0F00);
-//   screen.setTextWrap(true);
-//   screen.setTextSize(3);
-//   screen.println(text);
-//   //screen.setFonts((const gdl_Font_t *)SIMKAIFont18ptBitmaps);
-//   screen.println(text);
-//   delay(2000);
-// }
-
-// void loop(){
-//     testDrawPixel();
-//     testLine();
-//     testFastLines(COLOR_RGB565_PURPLE,COLOR_RGB565_YELLOW);       
-//     testRects(COLOR_RGB565_BLACK,COLOR_RGB565_WHITE);
-//     testRoundRects();
-//     testCircles(24,COLOR_RGB565_BLUE);
-//     testTriangles(COLOR_RGB565_YELLOW);
-//     testPrint();
-// }
-
-/**
-   @brief Constructor
-   @param gdl Screen object
-   @param touch Touch object
-*/
-DFRobot_UI ui(&screen, &touch);
-int8_t rotate =0;
-void setup()
-{
-
-  Serial.begin(9600);
-  //UI initialization
-  ui.begin();
-  //Draw picture
-  screen.drawRGBBitmap(/*x=*/(screen.width()-100)/2,/*y=*/(screen.height()-100)/2,/*bitmap gImage_Bitmap=*/(const unsigned uint16_t*)gImage_GrayscaleBitmap,/*w=*/100,/*h=*/100);
+  /*
+    Fourth button, btn4, for container 4
+  */ 
+  DFRobot_UI::sButton_t & btn4 = ui.creatButton();
+  btn4.setText("CONTAINER 4");
+  btn4.bgColor = COLOR_RGB565_CYAN;
+  btn4.setCallback(btnCallback);
+  //Each button has a text box, its parameter needs to be set by yourself.
+  btn4.setOutput(&tb);
+  ui.draw(&btn4,/**x=*/screen.width(),/**y=*/screen.height()/10*4,/*width*/screen.width()/3*2,/*height*/screen.width()/10*2);
 }
 
+//Callback function for three buttons
+void btnCallback(DFRobot_UI::sButton_t &btn,DFRobot_UI::sTextBox_t &obj) {
+   String text((char *)btn.text);
+   if(text == "NEW MEDICATION"){
+      newMedication();
+    }
+   else if(text == "CHANGE ALARM TIME"){
+    obj.setText("you have touch button off");
+    }
+   else if(text == "CHANGE AMOUNT TO DISPENSE"){
+    obj.deleteChar();
+    }
+   else{
+    homeScreen();
+   }
+    
+}
+
+void homeScreen(){
+  /*
+    First button, btn1, for user to input a medication not currently in the device
+ */ 
+  DFRobot_UI::sTextBox_t & tb = ui.creatText();
+  tb.bgColor = 0xe6B6;
+  ui.draw(&tb);
+  //Create a button control on the screen
+  DFRobot_UI::sButton_t & btn1 = ui.creatButton();
+  //Set the name of the button
+  btn1.setText("NEW MEDICATION");
+  btn1.bgColor = COLOR_RGB565_RED;
+  btn1.setCallback(btnCallback);
+  //Each button has a text box, its parameter needs to be set by yourself.
+  btn1.setOutput(&tb);
+  ui.draw(&btn1,/**x=*/screen.width()/10,/**y=*/screen.height()/5*2,/*width*/screen.width()/3*2,/*height*/screen.width()/10*2);
+
+ /*
+    Second button, btn2, for user to input a medication not currently in the device
+ */ 
+  DFRobot_UI::sButton_t & btn2 = ui.creatButton();
+  btn2.setText("CHANGE ALARM TIME");
+  btn2.bgColor = COLOR_RGB565_GREEN;
+  btn2.setCallback(btnCallback);
+  //Each button has a text box, its parameter needs to be set by yourself.
+  btn2.setOutput(&tb);
+  ui.draw(&btn2,/**x=*/screen.width()/10,/**y=*/screen.height()/5*3,/*width*/screen.width()/3*2,/*height*/screen.width()/10*2);
+
+
+/*
+    Third button, btn3, for user to input a medication not currently in the device
+ */ 
+  DFRobot_UI::sButton_t & btn3 = ui.creatButton();
+  btn3.setText("CHANGE AMOUNT TO DISPENSE");
+  btn3.bgColor = COLOR_RGB565_BLUE;
+  btn3.setCallback(btnCallback);
+  //Each button has a text box, its parameter needs to be set by yourself.
+  btn3.setOutput(&tb);
+  ui.draw(&btn3,/**x=*/screen.width()/10,/**y=*/screen.height()/5*4,/*width*/screen.width()/3*2,/*height*/screen.width()/10*2);
+}
+
+void setup()
+{ 
+  Serial.begin(115200);
+  ui.begin();
+
+  // Set the UI theme, there are two themes to choose from: CLASSIC and MODERN.
+  ui.setTheme(DFRobot_UI::MODERN);
+
+  homeScreen();
+}
 
 void loop()
 {
-
-    //getGestures()：Recognize gestures
-    DFRobot_UI:: eGesture_t gesture = ui.getGestures();
-
-   switch (gesture) {
-    //Clockwise rotation
-    case ui.DWROTATE : { 
-      rotate++;
-      if(rotate>3) rotate=0;
-      //Set screen display orientation
-       screen.setRotation(rotate);
-       screen.drawRGBBitmap(/*x=*/(screen.width()-100)/2,/*y=*/(screen.height()-100)/2,/*bitmap gImage_Bitmap=*/(const unsigned uint16_t*)gImage_GrayscaleBitmap,/*w=*/100,/*h=*/100);
-
-      } break; 
-    //Anticlockwise rotation
-    case ui.DCWROTATE : {
-      if(rotate<0) {rotate=3;}
-      else{
-        rotate--;
-      }
-       screen.setRotation(rotate);
-       screen.drawRGBBitmap(/*x=*/(screen.width()-100)/2,/*y=*/(screen.height()-100)/2,/*bitmap gImage_Bitmap=*/(const unsigned uint16_t*)gImage_GrayscaleBitmap,/*w=*/100,/*h=*/100);
-
-
-      } break;
-    case ui.NONE: {
-        return;
-      }
-  }
-
 
 }
