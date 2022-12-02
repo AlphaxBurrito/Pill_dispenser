@@ -8,6 +8,7 @@
 #include <WiFi.h>
 #include "time.h"
 #include <AsyncTCP.h>
+#include <ESPAsyncWebServer.h>
 
 const char* ssid = "Erics93";
 const char* password = "heejae9936";
@@ -24,8 +25,8 @@ const int   daylightOffset_sec = 3600;
 #define TFT_DC    15  // Data Command control pin
 #define TFT_RST   6  // Reset pin (could connect to RST pin)
 #define TFT_BL    7
-#define TFT_SCL   18
-#define TFT_SDA   17
+#define TFT_SCL   9
+#define TFT_SDA   8
 #define TFT_INT   16
 
 const int buzzer = 47;
@@ -33,6 +34,8 @@ const int buzzer = 47;
 float temp1;
 float humid1;
 int mode;
+String IP;
+
 
 class pillContainer {       // The class
   public:             // Access specifier
@@ -216,6 +219,10 @@ void btnCallback(DFRobot_UI::sButton_t &btn,DFRobot_UI::sTextBox_t &obj) {
 
     obj.setText("");
    }
+
+   else if(text == "IP"){
+    obj.setText(IP);
+   }
 }
 
 void homeScreen() {
@@ -364,14 +371,19 @@ void setup() {
   Serial.println("\nConnecting");
   int timeout_counter = 0;
 
-    while(WiFi.status() != WL_CONNECTED){
+    while (WiFi.status() != WL_CONNECTED) {
         Serial.print(".");
         delay(200);
         timeout_counter++;
         if(timeout_counter >= WL_CONNECTION_LOST*10){
-        ESP.restart();
+          ESP.restart();
         }
     }
+
+    // if (WiFi.waitForConnectResult() != WL_CONNECTED) {
+    //   Serial.println("WiFi Failed!");
+    // return;
+    // }
 
   Serial.println();
   Serial.print("IP Address: ");
@@ -379,7 +391,7 @@ void setup() {
   tb.setText(IP);
   Serial.println(WiFi.localIP());
 
-
+  
   backupScreen(tb);
 
   // Init and get the time
@@ -387,8 +399,11 @@ void setup() {
   printLocalTime();
 }
 
+struct tm timeinfo;
+
 void loop()
 {
+
   ui.refresh();
   if(cont1.ready) {
     screen.fillRect(/*x=*/(screen.width()/10), /*y=*/(screen.height()/10)*5 , /*w=*/20, /*h=*/20, /*color=*/COLOR_RGB565_GREEN);
@@ -417,6 +432,10 @@ void loop()
   else {
     screen.fillRect(/*x=*/(screen.width()/10)*4, /*y=*/(screen.height()/10)*8 , /*w=*/20, /*h=*/20, /*color=*/COLOR_RGB565_RED);
   }
+  
+  Serial.println(&timeinfo, "%H:%M:%S");
+  char* time = (char*)(&timeinfo, "%H:%M");
+  ui.drawString(/*x=*/(screen.width()/10), /*y=*/(screen.height()/2), time, COLOR_RGB565_BLACK,COLOR_RGB565_WHITE,2,0);
 
   // switch(ui.getGestures()) {
   //   case DFRobot_Gesture::SCLICK : refresh(); break;
