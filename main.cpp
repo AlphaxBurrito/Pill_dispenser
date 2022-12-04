@@ -116,12 +116,13 @@ void btnCallback(DFRobot_UI::sButton_t &btn,DFRobot_UI::sTextBox_t &obj) {
 
     String textBox = "Alarm:" + cont1.alarmTime + "        Pill:" + cont1.medNickName;
     for (int i = 0; i < 18 - (cont1.medNickName.length() + 5); i++) {
-      textBox = textBox + " ";
+      textBox += " ";
     }
-    textBox += "Per dispense:" + cont1.amountTaken;
+    String amountTaken = (char*)cont1.amountTaken;
+    textBox += "Per dispense:" + amountTaken;
     textBox += "    ";
-    textBox += "Pills Remaining:" + cont1.numberPills;
-
+    String numberPills = (char*)cont1.numberPills;
+    textBox += "Pills Remaining:" + numberPills;
     obj.setText(textBox);
    }
   else if(text == "2"){
