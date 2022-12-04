@@ -194,24 +194,26 @@ void btnCallback(DFRobot_UI::sButton_t &btn,DFRobot_UI::sTextBox_t &obj) {
    }
    else if(text == "1"){
     cont1.ready = true;
-    cont1.alarmTime = "12:00";
-    cont1.amountTaken = 1;
-    cont1.medNickName = "Fluoxetine";
-    cont1.numberPills = 30;
-    cont1.timesTaken = 1;
 
     String textBox = "Alarm:" + cont1.alarmTime + "        Pill:" + cont1.medNickName + "\n   Pills Remaining:" + cont1.numberPills;
     obj.setText(textBox);
    }
   else if(text == "2"){
     cont2.ready = true;
-    cont2.alarmTime = "10:00";
-    cont2.amountTaken = 1;
-    cont2.medNickName = "Escitalopram";
-    cont2.numberPills = 30;
-    cont2.timesTaken = 1;
 
     String textBox = "Alarm:" + cont2.alarmTime + "        Pill:" + cont2.medNickName + "\n Pills Remaining:" + cont2.numberPills;
+    obj.setText(textBox);
+   }
+   else if(text == "3"){
+    cont3.ready = true;
+
+    String textBox = "Alarm:" + cont3.alarmTime + "        Pill:" + cont3.medNickName + "\n   Pills Remaining:" + cont3.numberPills;
+    obj.setText(textBox);
+   }
+   else if(text == "4"){
+    cont4.ready = true;
+
+    String textBox = "Alarm:" + cont4.alarmTime + "        Pill:" + cont4.medNickName + "\n   Pills Remaining:" + cont4.numberPills;
     obj.setText(textBox);
    }
    else if(text == "GO"){
