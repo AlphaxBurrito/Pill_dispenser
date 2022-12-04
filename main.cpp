@@ -13,6 +13,12 @@
 const char* ssid = "Erics93";
 const char* password = "heejae9936";
 
+const char* PARAM_Container = "Container";
+const char* PARAM_Name = "Name";
+const char* PARAM_Quantity = "Quantity";
+const char* PARAM_TimeToTake = "TimeToTake";
+const char* PARAM_PerDispense = "PerDispense";
+
 const char* ntpServer = "pool.ntp.org";
 const long  gmtOffset_sec = -18000;
 const int   daylightOffset_sec = 3600;
@@ -94,13 +100,6 @@ void btnCallback(DFRobot_UI::sButton_t &btn,DFRobot_UI::sTextBox_t &obj);
 /*
   FUNCTION DECLARATIONS
 */
-
-void storeInfo(){
-  pillContainer cont1;
-  cont1.alarmTime = "12:00";
-  cont1.amountTaken = 1;
-  cont1.medNickName = "Tasty Drugs";
-}
 
 void newMedication() {
   clearScreen();
@@ -442,31 +441,43 @@ void setup() {
     }
   Serial.println(inputMessage);
   
-  currContainer = (request->getParam(PARAM_Container)->value());
-
+  String temp = (request->getParam(PARAM_Container)->value());
+  currContainer = temp.toInt();
   if (currContainer == 1) {
     cont1.medNickName = (request->getParam(PARAM_Name)->value());
-    cont1.numberPills = (request->getParam(PARAM_Quantity)->value());
-    cont1.alarmTime = (request->getParam(PARAM_TimeToTake)->value());
-    cont1.timesTaken = (request->getParam(PARAM_PerDispense)->value());
+    temp = (request->getParam(PARAM_Quantity)->value());
+    cont1.numberPills = temp.toInt();
+    temp = (request->getParam(PARAM_TimeToTake)->value());
+    cont1.alarmTime = temp.toInt();
+    temp = (request->getParam(PARAM_PerDispense)->value());
+    cont1.timesTaken = temp.toInt();
   }
   else if (currContainer == 2) {
     cont2.medNickName = (request->getParam(PARAM_Name)->value());
-    cont2.numberPills = (request->getParam(PARAM_Quantity)->value());
-    cont2.alarmTime = (request->getParam(PARAM_TimeToTake)->value());
-    cont2.timesTaken = (request->getParam(PARAM_PerDispense)->value());
+    temp = (request->getParam(PARAM_Quantity)->value());
+    cont2.numberPills = temp.toInt();
+    temp = (request->getParam(PARAM_TimeToTake)->value());
+    cont2.alarmTime = temp.toInt();
+    temp = (request->getParam(PARAM_PerDispense)->value());
+    cont2.timesTaken = temp.toInt();
   }
   else if (currContainer == 3) {
     cont3.medNickName = (request->getParam(PARAM_Name)->value());
-    cont3.numberPills = (request->getParam(PARAM_Quantity)->value());
-    cont3.alarmTime = (request->getParam(PARAM_TimeToTake)->value());
-    cont3.timesTaken = (request->getParam(PARAM_PerDispense)->value());
+    temp = (request->getParam(PARAM_Quantity)->value());
+    cont3.numberPills = temp.toInt();
+    temp = (request->getParam(PARAM_TimeToTake)->value());
+    cont3.alarmTime = temp.toInt();
+    temp = (request->getParam(PARAM_PerDispense)->value());
+    cont3.timesTaken = temp.toInt();
   }
   else if (currContainer == 4) {
     cont4.medNickName = (request->getParam(PARAM_Name)->value());
-    cont4.numberPills = (request->getParam(PARAM_Quantity)->value());
-    cont4.alarmTime = (request->getParam(PARAM_TimeToTake)->value());
-    cont4.timesTaken = (request->getParam(PARAM_PerDispense)->value());
+    temp = (request->getParam(PARAM_Quantity)->value());
+    cont4.numberPills = temp.toInt();
+    temp = (request->getParam(PARAM_TimeToTake)->value());
+    cont4.alarmTime = temp.toInt();
+    temp = (request->getParam(PARAM_PerDispense)->value());
+    cont4.timesTaken = temp.toInt();
   }
 
   request->send(200, "text/html", inputMessage + "<br><a href=\"/\">Return to Home Page</a>");
