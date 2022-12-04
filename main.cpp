@@ -194,25 +194,50 @@ void btnCallback(DFRobot_UI::sButton_t &btn,DFRobot_UI::sTextBox_t &obj) {
    else if(text == "1"){
     cont1.ready = true;
 
-    String textBox = "Alarm:" + cont1.alarmTime + "        Pill:" + cont1.medNickName + "\n   Pills Remaining:" + cont1.numberPills;
+    String textBox = "Alarm:" + cont1.alarmTime + "        Pill:" + cont1.medNickName;
+    for (int i = 0; i < 18 - (cont1.medNickName.length() + 5); i++) {
+      textBox = textBox + " ";
+    }
+    textBox = "Per dispense:" + cont1.amountTaken + "    ";
+    textbox += "Pills Remaining:" + cont1.numberPills;
+
     obj.setText(textBox);
    }
   else if(text == "2"){
     cont2.ready = true;
 
-    String textBox = "Alarm:" + cont2.alarmTime + "        Pill:" + cont2.medNickName + "\n Pills Remaining:" + cont2.numberPills;
+    String textBox = "Alarm:" + cont2.alarmTime + "        Pill:" + cont2.medNickName;
+    for (int i = 0; i < 18 - (cont2.medNickName.length() + 5); i++) {
+      textBox = textBox + " ";
+    }
+    textBox = "Per dispense:" + cont2.amountTaken + "    ";
+    textbox += "Pills Remaining:" + cont2.numberPills;
+
+    obj.setText(textBox);
     obj.setText(textBox);
    }
    else if(text == "3"){
     cont3.ready = true;
 
-    String textBox = "Alarm:" + cont3.alarmTime + "        Pill:" + cont3.medNickName + "\n   Pills Remaining:" + cont3.numberPills;
+    String textBox = "Alarm:" + cont3.alarmTime + "        Pill:" + cont1.medNickName;
+    for (int i = 0; i < 18 - (cont3.medNickName.length() + 5); i++) {
+      textBox = textBox + " ";
+    }
+    textBox = "Per dispense:" + cont3.amountTaken + "    ";
+    textbox += "Pills Remaining:" + cont3.numberPills;
+
     obj.setText(textBox);
    }
    else if(text == "4"){
     cont4.ready = true;
 
-    String textBox = "Alarm:" + cont4.alarmTime + "        Pill:" + cont4.medNickName + "\n   Pills Remaining:" + cont4.numberPills;
+    String textBox = "Alarm:" + cont4.alarmTime + "        Pill:" + cont1.medNickName;
+    for (int i = 0; i < 18 - (cont4.medNickName.length() + 5); i++) {
+      textBox = textBox + " ";
+    }
+    textBox = "Per dispense:" + cont4.amountTaken + "    ";
+    textbox += "Pills Remaining:" + cont4.numberPills;
+
     obj.setText(textBox);
    }
    else if(text == "GO"){
@@ -448,9 +473,9 @@ void setup() {
     temp = (request->getParam(PARAM_Quantity)->value());
     cont1.numberPills = temp.toInt();
     temp = (request->getParam(PARAM_TimeToTake)->value());
-    cont1.alarmTime = temp.toInt();
+    cont1.alarmTime = temp;
     temp = (request->getParam(PARAM_PerDispense)->value());
-    cont1.timesTaken = temp.toInt();
+    cont1.amountTaken = temp.toInt();
   }
   else if (currContainer == 2) {
     cont2.medNickName = (request->getParam(PARAM_Name)->value());
@@ -459,25 +484,25 @@ void setup() {
     temp = (request->getParam(PARAM_TimeToTake)->value());
     cont2.alarmTime = temp.toInt();
     temp = (request->getParam(PARAM_PerDispense)->value());
-    cont2.timesTaken = temp.toInt();
+    cont2.amountTaken = temp.toInt();
   }
   else if (currContainer == 3) {
     cont3.medNickName = (request->getParam(PARAM_Name)->value());
     temp = (request->getParam(PARAM_Quantity)->value());
     cont3.numberPills = temp.toInt();
     temp = (request->getParam(PARAM_TimeToTake)->value());
-    cont3.alarmTime = temp.toInt();
+    cont3.alarmTime = temp;
     temp = (request->getParam(PARAM_PerDispense)->value());
-    cont3.timesTaken = temp.toInt();
+    cont3.amountTaken = temp.toInt();
   }
   else if (currContainer == 4) {
     cont4.medNickName = (request->getParam(PARAM_Name)->value());
     temp = (request->getParam(PARAM_Quantity)->value());
     cont4.numberPills = temp.toInt();
     temp = (request->getParam(PARAM_TimeToTake)->value());
-    cont4.alarmTime = temp.toInt();
+    cont4.alarmTime = temp;
     temp = (request->getParam(PARAM_PerDispense)->value());
-    cont4.timesTaken = temp.toInt();
+    cont4.amountTaken = temp.toInt();
   }
 
   request->send(200, "text/html", inputMessage + "<br><a href=\"/\">Return to Home Page</a>");
@@ -525,10 +550,9 @@ void loop()
   else {
     screen.fillRect(/*x=*/(screen.width()/10)*4, /*y=*/(screen.height()/10)*8 , /*w=*/20, /*h=*/20, /*color=*/COLOR_RGB565_RED);
   }
-  
-  Serial.println(&timeinfo, "%H:%M:%S");
+
   char* time = (char*)(&timeinfo, "%H:%M");
-  ui.drawString(/*x=*/(screen.width()/10), /*y=*/(screen.height()/2), time, COLOR_RGB565_BLACK,COLOR_RGB565_WHITE,2,0);
+  //ui.drawString(/*x=*/(screen.width()/10), /*y=*/(screen.height()/2), time, COLOR_RGB565_BLACK,COLOR_RGB565_WHITE,2,0);
 
   // switch(ui.getGestures()) {
   //   case DFRobot_Gesture::SCLICK : refresh(); break;
