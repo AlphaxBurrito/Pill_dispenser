@@ -48,9 +48,9 @@ int currContainer;
 
 class pillContainer {       // The class
   public:             // Access specifier
-    int amountTaken;            // Amount taken per each dispense cycle
-    int timesTaken;             // Amount of times a dispense cycle should
-    int numberPills;            // Amount of pills stored in the container
+    String amountTaken;            // Amount taken per each dispense cycle
+    String timesTaken;             // Amount of times a dispense cycle should
+    String numberPills;            // Amount of pills stored in the container
     String alarmTime;           // Attribute (string variable)
     String medNickName;         // Name user would like to give pill
     boolean ready = false;      // Variable used for dispensing pills that are past alarm time
@@ -114,53 +114,28 @@ void btnCallback(DFRobot_UI::sButton_t &btn,DFRobot_UI::sTextBox_t &obj) {
    else if(text == "1"){
     cont1.ready = true;
 
-    String textBox = "Alarm:" + cont1.alarmTime + "        Pill:" + cont1.medNickName;
-    for (int i = 0; i < 18 - (cont1.medNickName.length() + 5); i++) {
-      textBox += " ";
-    }
-    String amountTaken = (char*)cont1.amountTaken;
-    textBox += "Per dispense:" + amountTaken;
-    textBox += "    ";
-    String numberPills = (char*)cont1.numberPills;
-    textBox += "Pills Remaining:" + numberPills;
+    String textBox = "Alarm:" + cont1.alarmTime + "        Per dispense:" + cont1.amountTaken + "    Pills Remaining" + cont1.numberPills + "Pill:" + cont1.medNickName;
+
     obj.setText(textBox);
    }
   else if(text == "2"){
     cont2.ready = true;
 
-    String textBox = "Alarm:" + cont2.alarmTime + "        Pill:" + cont2.medNickName;
-    for (int i = 0; i < 18 - (cont2.medNickName.length() + 5); i++) {
-      textBox = textBox + " ";
-    }
-    textBox += "Per dispense:" + cont2.amountTaken;
-    textBox += "    ";
-    textBox += "Pills Remaining:" + cont2.numberPills;
+    String textBox = "Alarm:" + cont1.alarmTime + "        Per dispense:" + cont1.amountTaken + "    Pills Remaining" + cont1.numberPills + "Pill:" + cont1.medNickName;
 
     obj.setText(textBox);
    }
    else if(text == "3"){
     cont3.ready = true;
 
-    String textBox = "Alarm:" + cont3.alarmTime + "        Pill:" + cont1.medNickName;
-    for (int i = 0; i < 18 - (cont3.medNickName.length() + 5); i++) {
-      textBox = textBox + " ";
-    }
-    textBox += "Per dispense:" + cont3.amountTaken;
-    textBox += "    ";
-    textBox += "Pills Remaining:" + cont3.numberPills;
+    String textBox = "Alarm:" + cont1.alarmTime + "        Per dispense:" + cont1.amountTaken + "    Pills Remaining" + cont1.numberPills + "Pill:" + cont1.medNickName;
 
     obj.setText(textBox);
    }
    else if(text == "4"){
     cont4.ready = true;
 
-    String textBox = "Alarm:" + cont4.alarmTime + "        Pill:" + cont1.medNickName;
-    for (int i = 0; i < 18 - (cont4.medNickName.length() + 5); i++) {
-      textBox = textBox + " ";
-    }
-    textBox += "Per dispense:" + cont4.amountTaken;
-    textBox += "    ";
-    textBox += "Pills Remaining:" + cont4.numberPills;
+    String textBox = "Alarm:" + cont1.alarmTime + "        Per dispense:" + cont1.amountTaken + "    Pills Remaining" + cont1.numberPills + "Pill:" + cont1.medNickName;
 
     obj.setText(textBox);
    }
@@ -395,38 +370,38 @@ void setup() {
   if (currContainer == 1) {
     cont1.medNickName = (request->getParam(PARAM_Name)->value());
     temp = (request->getParam(PARAM_Quantity)->value());
-    cont1.numberPills = temp.toInt();
+    cont1.numberPills = temp;
     temp = (request->getParam(PARAM_TimeToTake)->value());
     cont1.alarmTime = temp;
     temp = (request->getParam(PARAM_PerDispense)->value());
-    cont1.amountTaken = temp.toInt();
+    cont1.amountTaken = temp;
   }
   else if (currContainer == 2) {
     cont2.medNickName = (request->getParam(PARAM_Name)->value());
     temp = (request->getParam(PARAM_Quantity)->value());
-    cont2.numberPills = temp.toInt();
+    cont2.numberPills = temp;
     temp = (request->getParam(PARAM_TimeToTake)->value());
-    cont2.alarmTime = temp.toInt();
+    cont2.alarmTime = temp;
     temp = (request->getParam(PARAM_PerDispense)->value());
-    cont2.amountTaken = temp.toInt();
+    cont2.amountTaken = temp;
   }
   else if (currContainer == 3) {
     cont3.medNickName = (request->getParam(PARAM_Name)->value());
     temp = (request->getParam(PARAM_Quantity)->value());
-    cont3.numberPills = temp.toInt();
+    cont3.numberPills = temp;
     temp = (request->getParam(PARAM_TimeToTake)->value());
     cont3.alarmTime = temp;
     temp = (request->getParam(PARAM_PerDispense)->value());
-    cont3.amountTaken = temp.toInt();
+    cont3.amountTaken = temp;
   }
   else if (currContainer == 4) {
     cont4.medNickName = (request->getParam(PARAM_Name)->value());
     temp = (request->getParam(PARAM_Quantity)->value());
-    cont4.numberPills = temp.toInt();
+    cont4.numberPills = temp;
     temp = (request->getParam(PARAM_TimeToTake)->value());
     cont4.alarmTime = temp;
     temp = (request->getParam(PARAM_PerDispense)->value());
-    cont4.amountTaken = temp.toInt();
+    cont4.amountTaken = temp;
   }
 
   request->send(200, "text/html", inputMessage + "<br><a href=\"/\">Return to Home Page</a>");
