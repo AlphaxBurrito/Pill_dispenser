@@ -16,6 +16,8 @@ const char* password = "heejae9936";
 const char* ntpServer = "pool.ntp.org";
 const long  gmtOffset_sec = -18000;
 const int   daylightOffset_sec = 3600;
+AsyncWebServer server(80);
+
 
 #define TFT_MISO 13 // (leave TFT SDO disconnected if other SPI devices share MISO)
 #define TFT_MOSI 11
@@ -35,6 +37,7 @@ float temp1;
 float humid1;
 int mode;
 String IP;
+int currContainer;
 
 
 class pillContainer {       // The class
@@ -337,6 +340,34 @@ void backupScreen(DFRobot_UI::sTextBox_t &tb) {
   
 }
 
+const char index_html[] PROGMEM = R"rawliteral(
+<!DOCTYPE HTML><html><head>
+  <title>ESP Input Form</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  </head><body>
+  <form action="/get">
+    Container: <input type="number" name="Container">
+    <br>
+  <form action="/get">
+    Name: <input type="text" name="Name">
+    <br>
+  <form action="/get">
+    Quantity: <input type="number" name="Quantity">
+    <br>
+  <form action="/get">
+    Time To Take: <input type="text" name="TimeToTake">
+    <br>
+  <form action="/get">    
+    Per Dispense: <input type="number" name="PerDispense">
+    <br>
+    <input type="submit" value="Submit">
+  </form>
+</body></html>)rawliteral";
+
+void notFound(AsyncWebServerRequest *request) {
+  request->send(404, "text/plain", "Not found");
+}
+
 void printLocalTime(){
   struct tm timeinfo;
   if(!getLocalTime(&timeinfo)){
@@ -391,6 +422,55 @@ void setup() {
   tb.setText(IP);
   Serial.println(WiFi.localIP());
 
+  // Send web page with input fields to client
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send_P(200, "text/html", index_html);
+  });
+
+  // Send a GET request to <ESP_IP>/get?input1=<inputMessage>
+  server.on("/get", HTTP_GET, [] (AsyncWebServerRequest *request) {
+    String inputMessage;
+    String inputParam;
+    // GET input1 value on <ESP_IP>/get?input1=<inputMessage>
+    if (request->hasParam(PARAM_Container) && request->hasParam(PARAM_Name)&& request->hasParam(PARAM_Quantity) && request->hasParam(PARAM_TimeToTake) && request->hasParam(PARAM_PerDispense)){ 
+      inputMessage = "Information Saved";
+    }
+    else {
+      inputMessage = "No message sent";
+    }
+  Serial.println(inputMessage);
+  
+  currContainer = (request->getParam(PARAM_Container)->value());
+
+  if (currContainer == 1) {
+    cont1.medNickName = (request->getParam(PARAM_Name)->value());
+    cont1.numberPills = (request->getParam(PARAM_Quantity)->value());
+    cont1.alarmTime = (request->getParam(PARAM_TimeToTake)->value());
+    cont1.timesTaken = (request->getParam(PARAM_PerDispense)->value());
+  }
+  else if (currContainer == 2) {
+    cont2.medNickName = (request->getParam(PARAM_Name)->value());
+    cont2.numberPills = (request->getParam(PARAM_Quantity)->value());
+    cont2.alarmTime = (request->getParam(PARAM_TimeToTake)->value());
+    cont2.timesTaken = (request->getParam(PARAM_PerDispense)->value());
+  }
+  else if (currContainer == 3) {
+    cont3.medNickName = (request->getParam(PARAM_Name)->value());
+    cont3.numberPills = (request->getParam(PARAM_Quantity)->value());
+    cont3.alarmTime = (request->getParam(PARAM_TimeToTake)->value());
+    cont3.timesTaken = (request->getParam(PARAM_PerDispense)->value());
+  }
+  else if (currContainer == 4) {
+    cont4.medNickName = (request->getParam(PARAM_Name)->value());
+    cont4.numberPills = (request->getParam(PARAM_Quantity)->value());
+    cont4.alarmTime = (request->getParam(PARAM_TimeToTake)->value());
+    cont4.timesTaken = (request->getParam(PARAM_PerDispense)->value());
+  }
+
+  request->send(200, "text/html", inputMessage + "<br><a href=\"/\">Return to Home Page</a>");
+  });
+  server.onNotFound(notFound);
+  server.begin();
   
   backupScreen(tb);
 
