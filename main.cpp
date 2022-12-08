@@ -9,6 +9,7 @@
 #include "time.h"
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
+#include <ESP32Servo.h>
 
 const char* ssid = "Erics93";
 const char* password = "heejae9936";
@@ -24,6 +25,10 @@ const long  gmtOffset_sec = -18000;
 const int   daylightOffset_sec = 3600;
 AsyncWebServer server(80);
 
+#define minUs 500
+#define maxUs 2500
+#define rising_thresh 600
+#define falling_thresh 500
 
 #define TFT_MISO 13 // (leave TFT SDO disconnected if other SPI devices share MISO)
 #define TFT_MOSI 11
@@ -37,6 +42,18 @@ AsyncWebServer server(80);
 #define TFT_SDA   8
 #define TFT_INT   16
 
+
+
+static int servoPin [] = {15,16,14,32};
+static int photoresistorpin = 13;
+
+int dispensed = 0;
+int button_int = 0;
+
+Servo servo1;
+ESP32PWM pwm;
+TaskHandle_t readtask;
+
 const int buzzer = 47;
 
 float temp1;
@@ -44,7 +61,6 @@ float humid1;
 int mode;
 String IP;
 int currContainer;
-
 
 class pillContainer {       // The class
   public:             // Access specifier
@@ -89,7 +105,7 @@ DFRobot_UI ui(&screen, &touch);
 /*
   FUNCTION PROTOTYPE DECLARATIONS
 */
-void storeInfo();
+int servoDispense(int ServoNum, int DispenseAmount);
 void newMedication();
 void containerSelection();
 void homeScreen();
@@ -102,55 +118,143 @@ void btnCallback(DFRobot_UI::sButton_t &btn,DFRobot_UI::sTextBox_t &obj);
 
 void btnCallback(DFRobot_UI::sButton_t &btn,DFRobot_UI::sTextBox_t &obj) {
    String text((char *)btn.text);
-   if(text == "ON"){
-    mode = 1;
-    }
-   else if(text == "OFF"){
-    obj.setText("you have touch button off");
-    }
-   else if(text == "clr"){
-    mode = 0;
+   if(text == "IP"){
+    obj.setText(IP);
    }
    else if(text == "1"){
     cont1.ready = true;
 
-    String textBox = "Alarm:" + cont1.alarmTime + "        Per dispense:" + cont1.amountTaken + "    Pills Remaining" + cont1.numberPills + "Pill:" + cont1.medNickName;
+    String textBox = "Alarm:" + cont1.alarmTime + "        Per dispense:" + cont1.amountTaken + "    Pills Remaining" + cont1.numberPills + " Pill:" + cont1.medNickName;
 
     obj.setText(textBox);
    }
   else if(text == "2"){
     cont2.ready = true;
 
-    String textBox = "Alarm:" + cont1.alarmTime + "        Per dispense:" + cont1.amountTaken + "    Pills Remaining" + cont1.numberPills + "Pill:" + cont1.medNickName;
+    String textBox = "Alarm:" + cont2.alarmTime + "        Per dispense:" + cont2.amountTaken + "    Pills Remaining" + cont2.numberPills + "Pill:" + cont2.medNickName;
 
     obj.setText(textBox);
    }
    else if(text == "3"){
     cont3.ready = true;
 
-    String textBox = "Alarm:" + cont1.alarmTime + "        Per dispense:" + cont1.amountTaken + "    Pills Remaining" + cont1.numberPills + "Pill:" + cont1.medNickName;
+    String textBox = "Alarm:" + cont3.alarmTime + "        Per dispense:" + cont3.amountTaken + "    Pills Remaining" + cont3.numberPills + "Pill:" + cont3.medNickName;
+
 
     obj.setText(textBox);
    }
    else if(text == "4"){
     cont4.ready = true;
 
-    String textBox = "Alarm:" + cont1.alarmTime + "        Per dispense:" + cont1.amountTaken + "    Pills Remaining" + cont1.numberPills + "Pill:" + cont1.medNickName;
+    String textBox = "Alarm:" + cont4.alarmTime + "        Per dispense:" + cont4.amountTaken + "    Pills Remaining" + cont4.numberPills + "Pill:" + cont4.medNickName;
 
     obj.setText(textBox);
    }
    else if(text == "GO"){
-    cont1.ready = false;
-    cont2.ready = false;
-    cont3.ready = false;
-    cont4.ready = false;
+    int temp = 0;
+    if (cont1.ready) {
+      cont1.ready = false;
+      temp = cont1.numberPills.toInt() - servoDispense(0, cont1.amountTaken.toInt());
+      cont1.numberPills = (char*)temp;
+    }
+    if (cont2.ready) {
+      cont2.ready = false;
+      temp = cont2.numberPills.toInt() - servoDispense(1, cont2.amountTaken.toInt());
+      cont2.numberPills = (char*)temp;
+    }
+    if (cont3.ready) {
+      cont3.ready = false;
+      temp = cont3.numberPills.toInt() - servoDispense(2, cont3.amountTaken.toInt());
+      cont3.numberPills = (char*)temp;
+    }
+    if (cont4.ready) {
+      cont4.ready = false;
+      temp = cont4.numberPills.toInt() - servoDispense(3, cont4.amountTaken.toInt());
+      cont4.numberPills = (char*)temp;
+    }
 
-    obj.setText("");
+  if (cont1.numberPills.toInt() <= 5) {
+    tb.setText("Container low on     pills");
+  }
+  else if (cont2.numberPills.toInt() <= 5) {
+    tb.setText("Container low on     pills");
+  }
+  else if (cont3.numberPills.toInt() <= 5) {
+    tb.setText("Container low on     pills");
+  }
+  else if (cont4.numberPills.toInt() <= 5) {
+    tb.setText("Container low on     pills");
+  }
+  else {
+    tb.setText("");
+  }
    }
+}
 
-   else if(text == "IP"){
-    obj.setText(IP);
-   }
+void photoresistread(void * parameter) {
+	bool analog_int = 1;
+	while(1){
+		if(!analog_int){
+			if(analogRead(photoresistorpin) > rising_thresh){
+				analog_int = 1;
+				++dispensed;
+				Serial.println("Pill Dispensed");
+			}
+		}
+		if(analog_int){
+			if(analogRead(photoresistorpin) < falling_thresh){
+				analog_int = 0;
+			}
+		}
+		delay(1);
+	}
+}
+
+int servoDispense(int ServoNum, int DispenseAmount){
+	// Allow allocation of all timers
+	ESP32PWM::allocateTimer(0);
+	ESP32PWM::allocateTimer(1);
+	ESP32PWM::allocateTimer(2);
+	ESP32PWM::allocateTimer(3);
+
+  digitalWrite(48,LOW);
+	servo1.setPeriodHertz(50);      // Standard 50hz servo
+	servo1.attach(servoPin[ServoNum], minUs, maxUs);
+	pwm.attachPin(27, 10000);//10khz
+	dispensed = 0;
+	Serial.println("dispensing");
+
+	xTaskCreatePinnedToCore(photoresistread, "task1", 10000, NULL, 1, &readtask, 0);
+
+	for (size_t i = 0; i < 2*DispenseAmount+3; i++)
+	{
+		int pos;
+		for (pos = 120; pos >= 0; pos -= 1) { // sweep from 180 degrees to 0 degrees
+			servo1.write(pos);
+			digitalWrite(LED_BUILTIN, HIGH);
+			//photoresistread();
+			delay(5);
+		}
+		delay(500);
+		for (pos = 0; pos <= 180; pos += 1) { // sweep from 0 degrees to 180 degrees
+			// in steps of 1 degree
+			servo1.write(pos);
+			digitalWrite(LED_BUILTIN, LOW);
+			//photoresistread();
+			delay(5);             // waits 20ms for the servo to reach the position
+		}
+		for (pos = 180; pos >= 120; pos -= 1) { // sweep from 180 degrees to 0 degrees
+			servo1.write(pos);
+			digitalWrite(LED_BUILTIN, HIGH);
+			//photoresistread();
+			delay(5);
+		}
+		if(DispenseAmount <= dispensed) break;
+	}
+	vTaskDelete(readtask);
+	servo1.detach();
+	pwm.detachPin(27);
+	return(dispensed);
 }
 
 void homeScreen() {
@@ -308,9 +412,11 @@ void setup() {
   Serial.begin(115200);
   ui.begin();
   WiFi.enableSTA(true);
+
   // Set the UI theme, there are two themes to choose from: CLASSIC and MODERN.
   ui.setTheme(DFRobot_UI::MODERN);
   mode=0;
+  pinMode(48,OUTPUT);
   // if (! aht.begin()) {
   //   Serial.println("Could not find AHT? Check wiring");
   //   while (1) delay(10);
@@ -327,14 +433,14 @@ void setup() {
   Serial.println("\nConnecting");
   int timeout_counter = 0;
 
-    while (WiFi.status() != WL_CONNECTED) {
-        Serial.print(".");
-        delay(200);
-        timeout_counter++;
-        if(timeout_counter >= WL_CONNECTION_LOST*10){
-          ESP.restart();
-        }
-    }
+    // while (WiFi.status() != WL_CONNECTED) {
+    //     Serial.print(".");
+    //     delay(200);
+    //     timeout_counter++;
+    //     if(timeout_counter >= WL_CONNECTION_LOST*10){
+    //       ESP.restart();
+    //     }
+    // }
 
     // if (WiFi.waitForConnectResult() != WL_CONNECTED) {
     //   Serial.println("WiFi Failed!");
@@ -343,7 +449,7 @@ void setup() {
 
   Serial.println();
   Serial.print("IP Address: ");
-  String IP = WiFi.localIP().toString();
+  IP = WiFi.localIP().toString();
   tb.setText(IP);
   Serial.println(WiFi.localIP());
 
@@ -414,6 +520,22 @@ void setup() {
   // Init and get the time
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
   printLocalTime();
+
+  if (cont1.numberPills.toInt() <= 5) {
+    tb.setText("Container low on     pills");
+  }
+  else if (cont2.numberPills.toInt() <= 5) {
+    tb.setText("Container low on     pills");
+  }
+  else if (cont3.numberPills.toInt() <= 5) {
+    tb.setText("Container low on     pills");
+  }
+  else if (cont4.numberPills.toInt() <= 5) {
+    tb.setText("Container low on     pills");
+  }
+  else {
+    tb.setText("");
+  }
 }
 
 struct tm timeinfo;
@@ -450,8 +572,23 @@ void loop()
     screen.fillRect(/*x=*/(screen.width()/10)*4, /*y=*/(screen.height()/10)*8 , /*w=*/20, /*h=*/20, /*color=*/COLOR_RGB565_RED);
   }
 
-  char* time = (char*)(&timeinfo, "%H:%M");
+  String time = (String)(&timeinfo, "%H:%M");
   //ui.drawString(/*x=*/(screen.width()/10), /*y=*/(screen.height()/2), time, COLOR_RGB565_BLACK,COLOR_RGB565_WHITE,2,0);
+
+  if (time == cont1.alarmTime) {
+    cont1.ready = true;
+  }
+  if (time == cont2.alarmTime) {
+    cont2.ready = true;
+  }
+  if (time == cont3.alarmTime) {
+    cont3.ready = true;
+  }
+  if (time == cont4.alarmTime) {
+    cont4.ready = true;
+  }
+
+
 
   // switch(ui.getGestures()) {
   //   case DFRobot_Gesture::SCLICK : refresh(); break;
