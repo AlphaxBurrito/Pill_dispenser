@@ -45,7 +45,7 @@ AsyncWebServer server(80);
 
 
 static int servoPin [] = {15,16,14,32};
-static int photoresistorpin = 13;
+static int photoresistorpin = 48;
 
 int dispensed = 0;
 int button_int = 0;
@@ -54,7 +54,7 @@ Servo servo1;
 ESP32PWM pwm;
 TaskHandle_t readtask;
 
-const int buzzer = 47;
+const int buzzer;
 
 float temp1;
 float humid1;
@@ -217,7 +217,7 @@ int servoDispense(int ServoNum, int DispenseAmount){
 	ESP32PWM::allocateTimer(2);
 	ESP32PWM::allocateTimer(3);
 
-  digitalWrite(48,LOW);
+  digitalWrite(47,LOW);
 	servo1.setPeriodHertz(50);      // Standard 50hz servo
 	servo1.attach(servoPin[ServoNum], minUs, maxUs);
 	pwm.attachPin(27, 10000);//10khz
