@@ -2,7 +2,6 @@
 #include "DFRobot_GDL.h"
 #include "DFRobot_Touch.h"
 #include "DFRobot_Type.h"
-#include "Adafruit_AHTX0.h"
 #include <SD.h>
 #include <Arduino.h>
 #include <WiFi.h>
@@ -44,7 +43,7 @@ AsyncWebServer server(80);
 
 
 
-static int servoPin [] = {15,16,14,32};
+static int servoPin [] = {35,36,37,38};
 static int photoresistorpin = 48;
 
 int dispensed = 0;
@@ -252,6 +251,7 @@ int servoDispense(int ServoNum, int DispenseAmount){
 		if(DispenseAmount <= dispensed) break;
 	}
 	vTaskDelete(readtask);
+  digitalWrite(47,HIGH);
 	servo1.detach();
 	pwm.detachPin(27);
 	return(dispensed);
